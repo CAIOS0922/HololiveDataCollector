@@ -1,0 +1,2 @@
+# HololiveDataCollector
+ホロライブのメンバーデータを集めるためのやつです。Jsonで返します。
