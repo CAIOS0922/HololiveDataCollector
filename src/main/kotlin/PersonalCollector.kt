@@ -33,7 +33,7 @@ class PersonalCollector(
         for(snsElement in talentRootElement.getElementsByClass("t_sns clearfix")[0].children()) {
             val aTag = snsElement.getElementsByTag("a")[0]
             val snsName = aTag.text()
-            val link = aTag.attr("href")
+            val link = cutoutParameter(aTag.attr("href"))
 
             snsList.add(TalentCollector.SnsData(snsName, link))
         }
@@ -41,5 +41,10 @@ class PersonalCollector(
         return gson.toJsonTree(TalentCollector.TalentData(
             name, catchText, summaryText, icon, link, gen.toString(), snsList
         ))
+    }
+
+    private fun cutoutParameter(link: String): String {
+        val index = link.indexOf("?")
+        return if(index != -1) link.substring(0, index) else link
     }
 }
