@@ -27,9 +27,17 @@ class TalentCollector {
 
     private fun search(gen: GenerationName): String? {
         return try {
+            print("getting $gen member's html... ")
+
             val url = "$hololiveTalentUrl?gp=${convertNameToTag(gen)}"
             val (_, response, result) = url.httpGet().responseString()
-            if(response.statusCode == 200) result.get() else null
+            if(response.statusCode == 200) {
+                println("[OK]")
+                result.get()
+            } else {
+                println("[FAILED]")
+                null
+            }
         } catch (e: Throwable) {
             null
         }
@@ -44,14 +52,19 @@ class TalentCollector {
             try {
                 val link = talentElement.getElementsByTag("a")[0].attr("href")
                 val icon = talentElement.getElementsByTag("img")[0].attr("src")
-                val name = talentElement.getElementsByTag("h3")[0].ownText()
-                val personalCollector = PersonalCollector(name, icon, link, gen)
+                val jaName = talentElement.getElementsByTag("h3")[0].ownText()
+                val enName = talentElement.getElementsByTag("h3")[0].select("span")[0].text()
 
+                println("getting the details of \"$jaName\"...")
+
+                val personalCollector = PersonalCollector(jaName, enName, icon, link, gen)
                 jsonArray.add(personalCollector.get() ?: continue)
             } catch (_: Throwable) {
 
             }
         }
+
+        println("completed.\n")
 
         return jsonArray
     }
@@ -87,13 +100,16 @@ class TalentCollector {
         Gen0, Gen1, Gen2, Gamers, Gen3, Gen4, Gen5, HoloX
     }
 
-    data class TalentData(
+    data class MemberData(
         val name: String,
+        val enName: String,
+        val subName: String,
         val catch: String,
         val summary: String,
         val iconLink: String,
         val detailLink: String,
         val generation: String,
+        val figureList: List<String>,
         val snsList: List<SnsData>
     )
 
