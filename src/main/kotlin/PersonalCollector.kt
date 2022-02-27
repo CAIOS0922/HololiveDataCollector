@@ -1,5 +1,6 @@
 import com.github.kittinunf.fuel.httpGet
-import com.google.gson.JsonElement
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import org.jsoup.Jsoup
 
 class PersonalCollector(
@@ -7,7 +8,7 @@ class PersonalCollector(
     private val enName: String,
     private val icon: String,
     private val link: String,
-    private val gen: TalentCollector.GenerationName
+    private val gen: TalentCollector.Generation
 ) {
     fun get(): JsonElement? {
         return parse(search() ?: return null)
@@ -46,16 +47,26 @@ class PersonalCollector(
             figureLinkList.add(imgElement.attr("src"))
         }
 
-        return gson.toJsonTree(TalentCollector.MemberData(
+        return Json.encodeToJsonElement(TalentCollector.MemberData.serializer(), TalentCollector.MemberData(
             jaName, enName, subName, catchText, summaryText, icon, link, gen.toString(), figureLinkList, snsList
         ))
     }
 
     private fun getSubName(name: String) = when(name) {
-        "アキ・ローゼンタール" -> "アキロゼ"
-        "ラプラス・ダークネス" -> "ラプラス"
-        "【卒業生】桐生ココ"  -> "桐生ココ"
-        else         -> ""
+        "アキ・ローゼンタール"  -> "アキロゼ"
+        "ラプラス・ダークネス"  -> "ラプラス"
+        "【卒業生】桐生ココ"   -> "桐生ココ"
+        "ハコス・ベールズ"    -> "Baelz"
+        "クレイジー・オリー"   -> "Ollie"
+        "小鳥遊キアラ"      -> "Kiara"
+        "アーニャ・メルフィッサ" -> "Anya"
+        "がうる・ぐら"      -> "Gura"
+        "アイリス"        -> "IRyS"
+        "森カリオペ"       -> "Calli"
+        "パヴォリア・レイネ"   -> "Reine"
+        "ムーナ・ホシノヴァ"   -> "Moona"
+        "ワトソン・アメリア"   -> "Amelia"
+        else          -> ""
     }
 
     private fun cutoutParameter(link: String): String {

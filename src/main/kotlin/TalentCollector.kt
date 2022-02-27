@@ -1,31 +1,28 @@
 import com.github.kittinunf.fuel.httpGet
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.*
 import org.jsoup.Jsoup
 
 class TalentCollector {
 
     private val hololiveTalentUrl = "https://hololive.hololivepro.com/talents"
 
-    fun getMembers(genArray: Array<GenerationName>): JsonObject {
-        val jsonObject = JsonObject()
-
-        for(gen in genArray) {
-            jsonObject.add(gen.toString(), getGenMembers(gen) ?: continue)
+    fun getMembers(genArray: Array<Generation>): JsonObject {
+        return buildJsonObject {
+            for(gen in genArray) {
+                this.put(gen.toString(), getGenMembers(gen) ?: continue)
+            }
         }
-
-        return jsonObject
     }
 
     fun getAllMembers(): JsonObject {
-        return getMembers(GenerationName.values())
+        return getMembers(Generation.values())
     }
 
-    private fun getGenMembers(gen: GenerationName): JsonArray? {
+    private fun getGenMembers(gen: Generation): JsonArray? {
         return parse(search(gen) ?: return null, gen)
     }
 
-    private fun search(gen: GenerationName): String? {
+    private fun search(gen: Generation): String? {
         return try {
             print("getting $gen member's html... ")
 
@@ -44,24 +41,23 @@ class TalentCollector {
         }
     }
 
-    private fun parse(resultHtml: String, gen: GenerationName): JsonArray {
+    private fun parse(resultHtml: String, gen: Generation): JsonArray {
         val htmlDocument = Jsoup.parse(resultHtml)
         val talentRootElement = htmlDocument.getElementsByClass("talent_list clearfix")[0]
-        val jsonArray = JsonArray()
+        val jsonArray = buildJsonArray {
+            for (talentElement in talentRootElement.children()) {
+                try {
+                    val link = talentElement.getElementsByTag("a")[0].attr("href")
+                    val icon = talentElement.getElementsByTag("img")[0].attr("src")
+                    val jaName = talentElement.getElementsByTag("h3")[0].ownText()
+                    val enName = talentElement.getElementsByTag("h3")[0].select("span")[0].text()
 
-        for (talentElement in talentRootElement.children()) {
-            try {
-                val link = talentElement.getElementsByTag("a")[0].attr("href")
-                val icon = talentElement.getElementsByTag("img")[0].attr("src")
-                val jaName = talentElement.getElementsByTag("h3")[0].ownText()
-                val enName = talentElement.getElementsByTag("h3")[0].select("span")[0].text()
+                    println("getting the details of \"$jaName\"...")
 
-                println("getting the details of \"$jaName\"...")
+                    PersonalCollector(jaName, enName, icon, link, gen).get()?.let { this.add(it) }
+                } catch (_: Throwable) {
 
-                val personalCollector = PersonalCollector(jaName, enName, icon, link, gen)
-                jsonArray.add(personalCollector.get() ?: continue)
-            } catch (_: Throwable) {
-
+                }
             }
         }
 
@@ -70,7 +66,7 @@ class TalentCollector {
         return jsonArray
     }
 
-    enum class GenerationName(val id: String) {
+    enum class Generation(val id: String) {
         Gen0("gen-0"),
         Gen1("1stgen"),
         Gen2("gen-2"),
@@ -88,6 +84,7 @@ class TalentCollector {
         OG("og")
     }
 
+    @kotlinx.serialization.Serializable
     data class MemberData(
         val name: String,
         val enName: String,
@@ -101,6 +98,7 @@ class TalentCollector {
         val snsList: List<SnsData>
     )
 
+    @kotlinx.serialization.Serializable
     data class SnsData(
         val name: String,
         val link: String
