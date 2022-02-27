@@ -6,19 +6,19 @@ import org.jsoup.Jsoup
 class TalentCollector {
 
     private val hololiveTalentUrl = "https://hololive.hololivepro.com/talents"
-    private val generationTags = listOf("gen-0", "1stgen", "gen-2", "gamers", "gen-3", "gen-4", "gen-5", "holox")
 
-    fun getAllMembers(): JsonObject {
+    fun getMembers(genArray: Array<GenerationName>): JsonObject {
         val jsonObject = JsonObject()
 
-        for(genTag in generationTags) {
-            val gen = convertTagToName(genTag)
-            val members = getGenMembers(gen) ?: continue
-
-            jsonObject.add(gen.toString(), members)
+        for(gen in genArray) {
+            jsonObject.add(gen.toString(), getGenMembers(gen) ?: continue)
         }
 
         return jsonObject
+    }
+
+    fun getAllMembers(): JsonObject {
+        return getMembers(GenerationName.values())
     }
 
     private fun getGenMembers(gen: GenerationName): JsonArray? {
@@ -29,13 +29,14 @@ class TalentCollector {
         return try {
             print("getting $gen member's html... ")
 
-            val url = "$hololiveTalentUrl?gp=${convertNameToTag(gen)}"
+            val url = "$hololiveTalentUrl?gp=${gen.id}"
             val (_, response, result) = url.httpGet().responseString()
             if(response.statusCode == 200) {
                 println("[OK]")
                 result.get()
             } else {
                 println("[FAILED]")
+                println("CODE: ${response.statusCode}, MES: ${response.responseMessage}\n")
                 null
             }
         } catch (e: Throwable) {
@@ -69,35 +70,22 @@ class TalentCollector {
         return jsonArray
     }
 
-    private fun convertNameToTag(gen: GenerationName): String {
-        return when (gen) {
-            GenerationName.Gen0   -> generationTags[0]
-            GenerationName.Gen1   -> generationTags[1]
-            GenerationName.Gen2   -> generationTags[2]
-            GenerationName.Gamers -> generationTags[3]
-            GenerationName.Gen3   -> generationTags[4]
-            GenerationName.Gen4   -> generationTags[5]
-            GenerationName.Gen5   -> generationTags[6]
-            GenerationName.HoloX  -> generationTags[7]
-        }
-    }
-
-    private fun convertTagToName(tag: String): GenerationName {
-        return when (tag) {
-            generationTags[0] -> GenerationName.Gen0
-            generationTags[1] -> GenerationName.Gen1
-            generationTags[2] -> GenerationName.Gen2
-            generationTags[3] -> GenerationName.Gamers
-            generationTags[4] -> GenerationName.Gen3
-            generationTags[5] -> GenerationName.Gen4
-            generationTags[6] -> GenerationName.Gen5
-            generationTags[7] -> GenerationName.HoloX
-            else              -> throw IllegalStateException("Unknown Tag")
-        }
-    }
-
-    enum class GenerationName {
-        Gen0, Gen1, Gen2, Gamers, Gen3, Gen4, Gen5, HoloX
+    enum class GenerationName(val id: String) {
+        Gen0("gen-0"),
+        Gen1("1stgen"),
+        Gen2("gen-2"),
+        Gamers("gamers"),
+        Gen3("gen-3"),
+        Gen4("gen-4"),
+        Gen5("gen-5"),
+        HoloX("holox"),
+        INNK_MUSIC("innk-music"),
+        INDONESIA("indonesia"),
+        ENGLISH("english"),
+        MYTH("myth"),
+        HOPE("project-hope"),
+        COUNCIL("council"),
+        OG("og")
     }
 
     data class MemberData(
